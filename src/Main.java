@@ -1,4 +1,5 @@
 import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.*;
 import java.sql.*;
@@ -142,10 +143,42 @@ public class Main {
         });
 
         // "Grafiği Göster" Butonuna Tıklanırsa
-        chartButton.addActionListener(new ActionListener() {
+        viewButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 try (Connection conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/budget_app", "root", "61Bera54.")) {
-                    showChart(conn);
+                    Statement stmt = conn.createStatement();
+                    ResultSet rs = stmt.executeQuery("SELECT * FROM transactions");
+
+                    // Sonuçları alıp bir JTable'e eklemek için model hazırlıyoruz
+                    ResultSetMetaData metaData = rs.getMetaData();
+                    int columnCount = metaData.getColumnCount();
+
+                    // Sütun adlarını almak
+                    String[] columnNames = new String[columnCount];
+                    for (int i = 1; i <= columnCount; i++) {
+                        columnNames[i - 1] = metaData.getColumnName(i);  // Sütun adlarını doğru şekilde alıyoruz
+                    }
+
+                    DefaultTableModel model = new DefaultTableModel(columnNames, 0);
+
+                    // Verileri alıp tabloya ekliyoruz
+                    while (rs.next()) {
+                        Object[] row = new Object[columnCount];
+                        for (int i = 1; i <= columnCount; i++) {
+                            row[i - 1] = rs.getObject(i);  // Satır verilerini doğru şekilde alıyoruz
+                        }
+                        model.addRow(row);
+                    }
+
+                    // Tabloyu panel üzerine ekliyoruz
+                    JTable table = new JTable(model);
+                    JScrollPane scrollPane = new JScrollPane(table);
+                    scrollPane.setBounds(10, 250, 560, 100);  // Tabloyu uygun bir alana yerleştiriyoruz
+                    panel.add(scrollPane);
+
+                    // Paneli güncelleyip tabloyu gösteriyoruz
+                    panel.revalidate();
+                    panel.repaint();
                 } catch (SQLException ex) {
                     System.out.println("Hata: " + ex.getMessage());
                 }
